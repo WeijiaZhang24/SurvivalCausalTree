@@ -1,0 +1,20 @@
+Package: survivalCausalTree
+Version: 0.0
+Date: 2016-04-12
+Authors@R: c(
+             person("Weijia", "Zhang", role = c("aut", "trl", "cre"),
+                    email = "weijia.zhang@mymail.unisa.edu.au",
+		    comment = "author of initial R port"))
+Description: Recursive partitioning for classification, 
+  regression and survival trees.  An implementation of most of the 
+  functionality of the 1984 book by Breiman, Friedman, Olshen and Stone.
+Title: Recursive Partitioning Causal Trees
+Depends: R (>= 2.15.0), graphics, stats, grDevices, rpart, rpart.plot, data.table, survival
+Suggests: survival
+License: GPL-2 | GPL-3
+LazyData: yes
+ByteCompile: yes
+Packaged: 2015-02-24 10:32:13 UTC; ripley
+Author: Weijia Zhang [aut, trl, cre] 
+NeedsCompilation: yes
+

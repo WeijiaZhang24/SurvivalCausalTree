@@ -1,0 +1,280 @@
+/*
+ * The main workhorse of the recursive partitioning module.  When called
+ *   with a node, it partitions it and then calls itself to partition the
+ *   children it has created.
+ * If the node is not splittable (too few people, or complexity is too small)
+ *   it simply returns.  The routine may not be able to discover that the
+ *   complexity is too small until after the children have been partitioned,
+ *   so it needs to check this at the end.
+ * The vector who[n] indexes which observations are in this node, to speed
+ *   up the routine.
+ */
+#include "causalTree.h"
+#include "node.h"
+#include "causalTreeproto.h"
+
+int
+  partition(int nodenum, pNode splitnode, double *sumrisk, int n1, int n2,
+            int minsize, int split_Rule, double alpha, int bucketnum, int bucketMax,
+            double train_to_est_ratio)
+  {
+    pNode me;
+    double tempcp;
+    int i, j, k;
+    double tempcp2;
+    double left_risk, right_risk;
+    int left_split, right_split;
+    double twt, ttr; //ttr is added by SS
+    int nleft, nright;
+    int n;
+    //added by SS
+    int min_node_size = minsize;
+
+    me = splitnode;
+    n = n2 - n1;                /* total number of observations */
+    me->id = nodenum;
+
+
+if (nodenum > 1) {
+  twt = 0;
+  ttr = 0;
+  k = 0;
+for (i = n1; i < n2; i++) {
+    j = ct.sorts[0][i]; /* any variable would do, use first */
+      if (j < 0)
+        j = -(1 + j);   /* if missing, value = -(1+ true index) */
+    ct.wtemp[k] = ct.wt[j];
+    //WJ: added
+    ct.propensitytemp[k] = ct.propensity[j];
+    ct.censoringProbtemp[k] = ct.censoringProb[j];
+    ct.completeCasetemp[k] = ct.censoringProb[j];
+
+    ct.trtemp[k] = ct.treatment[j];
+    ct.ytemp[k] = ct.ydata[j];
+    twt += ct.wt[j];
+    ttr += ct.treatment[j] * ct.wt[j];
+    k++;
+  }
+  if (split_Rule == 1) {
+    // tot
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, ct.propensity);
+  } else if (split_Rule == 2) {
+    // ct
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio, ct.propensitytemp);
+  } else if (split_Rule == 3) {
+    // fit
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio, ct.propensitytemp);
+  } else if (split_Rule == 4) {
+    //tstats
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio);
+  } else if (split_Rule == 5) {
+    // totD
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, ct.propensity);
+  } else if (split_Rule == 6) {
+    // CTD
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio);
+  } else if (split_Rule == 7) {
+    //fitD
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio);
+  } else if (split_Rule == 8) {
+    //tstatsD
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio);
+  } else if (split_Rule == 9) {
+    // user (temporarily set as CT)
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio,
+     ct.propensitytemp, ct.censoringProbtemp, ct.completeCasetemp);
+    //printf("%d\t",ct.completeCasetemp[2]);
+  } else if (split_Rule == 10) {
+    // userD (temporarily set as CTD)
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio);
+  } else if (split_Rule == 11) {
+    // user2
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio,ct.propensitytemp);
+  } else if (split_Rule == 12) {
+    // user3
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio,ct.propensitytemp);
+  } else if (split_Rule == 13) {
+    // user4
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+      &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio,ct.propensitytemp);
+  } else if (split_Rule == 14) {
+    // user4
+    (*ct_eval) (n, ct.ytemp, me->response_est, me->controlMean, me->treatMean,
+     &(me->risk), ct.wtemp, ct.trtemp, ct.max_y, alpha, train_to_est_ratio,ct.propensitytemp);
+  }
+
+  me->num_obs = n;
+  me->sum_wt = twt;
+  me->sum_tr = ttr;
+  tempcp = me->risk;
+  if (tempcp > me->complexity)
+    tempcp = me->complexity;
+} else
+  tempcp = me->risk;
+
+/*
+ * Can I quit now ?
+ */
+
+if (me->num_obs < ct.min_split || tempcp <= ct.alpha || nodenum > ct.maxnode) {
+  me->complexity = ct.alpha;
+  *sumrisk = me->risk;
+  /*
+  printf("\n Entered no splitting condition\n");
+  printf("%f\t ct.alpha\n", ct.alpha);
+  printf("%d\t me.num_obs\n", me->num_obs);
+  printf("%d\t ct.min_split\n", ct.min_split);
+  printf("%f\t tempcp\n", tempcp);
+  printf("%d\t ct.maxnode\n", ct.maxnode);
+  printf("%d\t nodenum\n",nodenum);
+  //*/
+  /*
+   * make sure the split doesn't have random pointers to somewhere
+   * i.e., don't trust that whoever allocated memory set it to NULL
+   */
+  me->leftson = (pNode)  NULL;
+  me->rightson = (pNode) NULL;
+  me->primary = (pSplit) NULL;
+  me->surrogate = (pSplit) NULL;
+  return 0;
+}
+/*
+ * Guess I have to do the split
+ */
+
+bsplit(me, n1, n2, min_node_size, split_Rule, alpha, bucketnum, bucketMax, train_to_est_ratio);
+
+if (!me->primary) {
+  /*
+   * This is rather rare -- but I couldn't find a split worth doing
+   */
+  me->complexity = ct.alpha;
+  me->leftson = (pNode) NULL;
+  me->rightson = (pNode) NULL;
+  me->primary = (pSplit) NULL;
+  me->surrogate = (pSplit) NULL;
+  *sumrisk = me->risk;
+  return 0;
+}
+#ifdef DEBUG
+print_tree(me, 4);
+#endif
+if (ct.maxsur > 0)
+  surrogate(me, n1, n2);
+else
+  me->surrogate = (pSplit) NULL;
+
+nodesplit(me, nodenum, n1, n2, &nleft, &nright);
+
+/*
+ * split the leftson
+ */
+//printf("%f\n",tempcp);
+me->leftson = (pNode) CALLOC(1, nodesize);
+(me->leftson)->parent = me;
+(me->leftson)->complexity = tempcp - ct.alpha;
+left_split = partition(2 * nodenum, me->leftson, &left_risk, n1, n1 + nleft,
+                       min_node_size, split_Rule, alpha, bucketnum, bucketMax,
+                       train_to_est_ratio);
+
+/*
+ * Update my estimate of cp, and split the right son.
+ */
+tempcp = (me->risk - left_risk) / (left_split + 1);
+tempcp2 = (me->risk - (me->leftson)->risk);
+if (tempcp < tempcp2)
+  tempcp = tempcp2;
+if (tempcp > me->complexity)
+  tempcp = me->complexity;
+
+me->rightson = (pNode) CALLOC(1, nodesize);
+(me->rightson)->parent = me;
+(me->rightson)->complexity = tempcp - ct.alpha;
+right_split = partition(1 + 2 * nodenum, me->rightson, &right_risk,
+                        n1 + nleft, n1 + nleft + nright, min_node_size, split_Rule, alpha,
+                        bucketnum, bucketMax, train_to_est_ratio);
+
+
+/*
+ * Now calculate my actual C.P., which depends on children nodes, and
+ *  on grandchildren who do not collapse before the children.
+ * The calculation is done assuming that I am the top node of the
+ *  whole tree, an assumption to be fixed up later.
+ */
+tempcp = (me->risk - (left_risk + right_risk)) /
+  (left_split + right_split + 1);
+/* Who goes first -- minimum of tempcp, leftson, and rightson */
+if ((me->rightson)->complexity > (me->leftson)->complexity) {
+  if (tempcp > (me->leftson)->complexity) {
+    /* leftson collapses first */
+    left_risk = (me->leftson)->risk;
+    left_split = 0;
+
+    tempcp = (me->risk - (left_risk + right_risk)) /
+      (left_split + right_split + 1);
+    if (tempcp > (me->rightson)->complexity) {
+      /* right one goes too */
+      right_risk = (me->rightson)->risk;
+      right_split = 0;
+    }
+  }
+} else if (tempcp > (me->rightson)->complexity) {
+  /* right hand child goes first */
+  right_split = 0;
+  right_risk = (me->rightson)->risk;
+
+  tempcp = (me->risk - (left_risk + right_risk)) /
+    (left_split + right_split + 1);
+  if (tempcp > (me->leftson)->complexity) {
+    /* left one goes too */
+    left_risk = (me->leftson)->risk;
+    left_split = 0;
+  }
+}
+
+me->complexity = (me->risk - (left_risk + right_risk)) / (left_split + right_split + 1);
+
+
+if (me->complexity <= ct.alpha) {
+  /*
+  printf("all in vain \n");
+  printf("ct.alpha \t %f\n", ct.alpha);
+  printf("me->complexity \t %f\n", me->complexity);
+  printf("left_split \t %d\n", left_split);
+  printf("right_split \t %d\n", right_split);
+  printf("left_risk \t %f\n", left_risk);
+  printf("right_risk \t %f\n", right_risk);
+  printf("me risk \t %f\n", me->risk);
+  //*/
+
+  /*
+   * All was in vain!  This node doesn't split after all.
+   */
+
+  free_tree(me, 0);
+  *sumrisk = me->risk;
+  for (i = n1; i < n2; i++) {
+    j = ct.sorts[0][i];
+    if (j < 0)
+      j = -(1 + j);
+    ct.which[j] = nodenum;      /* revert to the old nodenumber */
+  }
+  return 0;               /* return # of splits */
+
+} else {
+  *sumrisk = left_risk + right_risk;
+  return left_split + right_split + 1;
+}
+  }
